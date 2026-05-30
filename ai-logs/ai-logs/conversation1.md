@@ -19,26 +19,7 @@ Claude generated a complete single-file HTML application called "Studio Glam AI 
 - Multiple beauty filter options
 - Generative artistic filters
 - Download functionality
-- Fully responsive mobile-friendly design
-
----
-
-### Prompt 2:
-Make the UI more glamorous with better animations and a professional studio feel.
-
-### Result 2:
-Claude enhanced the design with:
-- Smooth fade-in animations
-- Gold gradient typography
-- Professional studio branding
-- Polished button hover effects
-
----
-
-### Tools Used:
-- Claude AI (claude.ai)
-- HTML, CSS, JavaScript
-- Canvas API for image filters
+- Fully responsive mobile-friendly app
 
 ### Outcome:
 Successfully built a fully functional Glam AI photo editing web app ready for mobile use.
