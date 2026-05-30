@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>GLAM AI — Photo Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c9a96e;
+    --gold-light: #e8cfa0;
+    --gold-dim: #7a5f38;
+    --bg-deep: #080608;
+    --bg-mid: #110f13;
+    --bg-card: #1a1620;
+    --bg-panel: #141018;
+    --text: #f0e8e0;
+    --text-muted: #7a6e7a;
+    --rose: #c97b8a;
+    --violet: #8a7ab5;
+    --glow: rgba(201,169,110,0.18);
+    --radius: 16px;
+  }
+ 
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+  body {
+    font-family: 'Jost', sans-serif;
+    background: var(--bg-deep);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow-x: hidden;
+  }
+ 
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 10%, rgba(201,169,110,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 80% 90%, rgba(138,122,181,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 50% 50%, rgba(201,123,138,0.03) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+ 
+  .app {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 420px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 40px;
+  }
+ 
+  /* Header */
+  .header {
+    padding: 44px 24px 20px;
+    text-align: center;
+    position: relative;
+  }
+ 
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 60px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+ 
+  .logo-mark {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 11px;
+    font-weight: 300;
+    letter-spacing: 6px;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    opacity: 0.8;
+  }
+ 
+  .logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 42px;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--text);
+    line-height: 1;
+    background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 50%, var(--rose) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 2px;
+  }
+ 
+  .logo-sub {
+    font-size: 9px;
+    letter-spacing: 8px;
+    color: var(--text-muted);
+    font-weight: 300;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+ 
+  /* Upload Zone */
+  .upload-section {
+    padding: 24px 20px 16px;
+  }
+ 
+  .upload-zone {
+    position: relative;
+    border: 1px solid rgba(201,169,110,0.2);
+    border-radius: var(--radius);
+    background: var(--bg-card);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+ 
+  .upload-zone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(201,169,110,0.03) 0%, transparent 60%);
+  }
+ 
+  .upload-zone:hover {
+    border-color: rgba(201,169,110,0.45);
+    box-shadow: 0 0 30px rgba(201,169,110,0.08), inset 0 0 30px rgba(201,169,110,0.04);
+  }
+ 
+  .upload-zone.drag-over {
+    border-color: var(--gold);
+    box-shadow: 0 0 40px rgba(201,169,110,0.2);
+  }
+ 
+  .upload-placeholder {
+    text-align: center;
+    padding: 40px 20px;
+    z-index: 1;
+  }
+ 
+  .upload-icon {
+    width: 56px; height: 56px;
+    margin: 0 auto 16px;
+    border: 1px solid rgba(201,169,110,0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(201,169,110,0.06);
+    position: relative;
+  }
+ 
+  .upload-icon svg {
+    width: 24px; height: 24px;
+    stroke: var(--gold);
+  }
+ 
+  .upload-icon::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1px solid rgba(201,169,110,0.1);
+  }
+ 
+  .upload-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+ 
+  .upload-hint {
+    font-size: 11px;
+    font-weight: 300;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+  }
+ 
+  .upload-btn {
+    margin-top: 20px;
+    padding: 10px 28px;
+    background: transparent;
+    border: 1px solid var(--gold-dim);
+    color: var(--gold);
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+ 
+  .upload-btn:hover {
+    background: rgba(201,169,110,0.1);
+    border-color: var(--gold);
+  }
+ 
+  #fileInput { display: none; }
+ 
+  /* Canvas Container */
+  .canvas-wrapper {
+    position: relative;
+    width: 100%;
+    min-height: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a0810;
+  }
+ 
+  #mainCanvas {
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    display: block;
+  }
+ 
+  .canvas-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent 70%, rgba(8,6,8,0.6) 100%);
+  }
+ 
+  .processing-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(8,6,8,0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+ 
+  .processing-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+ 
+  .spinner {
+    width: 36px; height: 36px;
+    border: 1px solid rgba(201,169,110,0.2);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+ 
+  @keyframes spin { to { transform: rotate(360deg); } }
+ 
+  .processing-text {
+    font-size: 11px;
+    font-weight: 300;
+    letter-spacing: 3px;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+ 
+  /* Photo Actions Bar */
+  .photo-actions {
+    display: flex;
+    gap: 8px;
+    padding: 12px 20px;
+    justify-content: flex-end;
+  }
+ 
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-muted);
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+ 
+  .action-btn:hover, .action-btn.active {
+    border-color: rgba(201,169,110,0.4);
+    color: var(--gold);
+    background: rgba(201,169,110,0.06);
+  }
+ 
+  .action-btn svg {
+    width: 12px; height: 12px;
+    stroke: currentColor;
+  }
+ 
+  /* Section Label */
+  .section-label {
+    padding: 20px 20px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+ 
+  .section-label span {
+    font-size: 9px;
+    font-weight: 400;
+    letter-spacing: 4px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+ 
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(201,169,110,0.2), transparent);
+  }
+ 
+  /* Filter Grid */
+  .filters-scroll {
+    padding: 0 20px 4px;
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+ 
+  .filters-scroll::-webkit-scrollbar { display: none; }
+ 
+  .filter-chip {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px solid transparent;
+    background: var(--bg-card);
+    transition: all 0.25s ease;
+    min-width: 76px;
+  }
+ 
+  .filter-chip:hover {
+    border-color: rgba(201,169,110,0.2);
+    background: #1f1b27;
+  }
+ 
+  .filter-chip.active {
+    border-color: var(--gold);
+    background: rgba(201,169,110,0.08);
+    box-shadow: 0 0 16px rgba(201,169,110,0.12);
+  }
+ 
+  .filter-thumb {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: var(--bg-panel);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+ 
+  .filter-thumb canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+ 
+  .filter-thumb .thumb-icon {
+    font-size: 20px;
+  }
+ 
+  .filter-name {
+    font-size: 9px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    text-align: center;
+    white-space: nowrap;
+  }
+ 
+  .filter-chip.active .filter-name {
+    color: var(--gold);
+  }
+ 
+  /* Intensity Slider */
+  .intensity-section {
+    padding: 8px 20px 16px;
+  }
+ 
+  .intensity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+ 
+  .intensity-label {
+    font-size: 9px;
+    font-weight: 300;
+    letter-spacing: 3px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+ 
+  .intensity-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--gold);
+  }
+ 
+  .slider-track {
+    position: relative;
+    height: 2px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+  }
+ 
+  .slider-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+    border-radius: 2px;
+    transition: width 0.1s;
+  }
+ 
+  #intensitySlider {
+    position: absolute;
+    inset: -8px 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+  }
+ 
+  /* Generative Filters */
+  .gen-grid {
+    padding: 0 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+  }
+ 
+  .gen-card {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: all 0.3s ease;
+    aspect-ratio: 3/4;
+    background: var(--bg-card);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+ 
+  .gen-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(201,169,110,0.3);
+  }
+ 
+  .gen-card.active {
+    border-color: var(--gold);
+    box-shadow: 0 0 20px rgba(201,169,110,0.15);
+  }
+ 
+  .gen-card-bg {
+    position: absolute;
+    inset: 0;
+    opacity: 0.15;
+    transition: opacity 0.3s;
+  }
+ 
+  .gen-card:hover .gen-card-bg,
+  .gen-card.active .gen-card-bg {
+    opacity: 0.25;
+  }
+ 
+  .gen-card-icon {
+    font-size: 28px;
+    position: relative;
+    z-index: 1;
+  }
+ 
+  .gen-card-name {
+    font-size: 9px;
+    font-weight: 400;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    position: relative;
+    z-index: 1;
+    text-align: center;
+  }
+ 
+  .gen-card.active .gen-card-name {
+    color: var(--gold);
+  }
+ 
+  .gen-badge {
+    position: absolute;
+    top: 8px; right: 8px;
+    font-size: 7px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    background: rgba(201,169,110,0.15);
+    color: var(--gold);
+    border-radius: 10px;
+    text-transform: uppercase;
+    border: 1px solid rgba(201,169,110,0.2);
+    z-index: 1;
+  }
+ 
+  /* Download Button */
+  .download-section {
+    padding: 24px 20px 8px;
+  }
+ 
+  .download-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #2a1f0e 0%, #3d2d14 50%, #2a1f0e 100%);
+    border: 1px solid var(--gold-dim);
+    color: var(--gold-light);
+    font-family: 'Jost', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+ 
+  .download-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(201,169,110,0.1) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+ 
+  .download-btn:hover::before { opacity: 1; }
+ 
+  .download-btn:hover {
+    border-color: var(--gold);
+    box-shadow: 0 0 30px rgba(201,169,110,0.2), 0 4px 20px rgba(0,0,0,0.4);
+    transform: translateY(-1px);
+  }
+ 
+  .download-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    transform: none;
+  }
+ 
+  .download-btn svg {
+    width: 14px; height: 14px;
+    stroke: currentColor;
+  }
+ 
+  /* Reset link */
+  .reset-link {
+    text-align: center;
+    padding: 12px;
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+    transition: color 0.2s;
+  }
+ 
+  .reset-link:hover { color: var(--gold-dim); }
+ 
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--bg-card);
+    border: 1px solid rgba(201,169,110,0.3);
+    color: var(--gold-light);
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 11px;
+    font-weight: 300;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0;
+    transition: all 0.4s ease;
+    pointer-events: none;
+    z-index: 100;
+    white-space: nowrap;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  }
+ 
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+ 
+  /* Divider */
+  .divider {
+    margin: 8px 20px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201,169,110,0.1), transparent);
+  }
+ 
+  /* Tooltip badge on filter thumb */
+  .filter-chip.beauty .filter-thumb { background: linear-gradient(135deg, #1a0f1a, #2a1520); }
+  .filter-chip.gen .filter-thumb { background: linear-gradient(135deg, #0f1525, #1a1030); }
+ 
+  /* Responsive tweaks */
+  @media (max-width: 380px) {
+    .logo { font-size: 36px; }
+    .gen-grid { gap: 8px; }
+    .filters-scroll { gap: 8px; }
+  }
+ 
+  /* Scrollbar for whole page */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(201,169,110,0.2); border-radius: 2px; }
+</style>
+</head>
+<body>
+ 
+<div class="app">
+ 
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-mark">✦ Studio</div>
+    <div class="logo">Glam AI</div>
+    <div class="logo-sub">Photo Editor</div>
+  </div>
+ 
+  <!-- Upload / Canvas Section -->
+  <div class="upload-section">
+    <div class="upload-zone" id="uploadZone">
+      <div class="upload-placeholder" id="uploadPlaceholder">
+        <div class="upload-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <div class="upload-title">Drop your photo here</div>
+        <div class="upload-hint">JPG · PNG · WEBP</div>
+        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">Choose Photo</button>
+      </div>
+      <div class="canvas-wrapper" id="canvasWrapper" style="display:none; width:100%;">
+        <canvas id="mainCanvas"></canvas>
+        <div class="canvas-overlay"></div>
+        <div class="processing-overlay" id="processingOverlay">
+          <div class="spinner"></div>
+          <div class="processing-text" id="processingText">Applying filter</div>
+        </div>
+      </div>
+    </div>
+    <input type="file" id="fileInput" accept="image/*">
+  </div>
+ 
+  <!-- Photo Actions -->
+  <div class="photo-actions" id="photoActions" style="display:none;">
+    <button class="action-btn" onclick="document.getElementById('fileInput').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      New Photo
+    </button>
+    <button class="action-btn" id="resetBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+      Reset
+    </button>
+  </div>
+ 
+  <!-- Beauty Filters -->
+  <div id="filtersSection" style="display:none;">
+    <div class="section-label"><span>✦ Beauty Filters</span></div>
+ 
+    <div class="filters-scroll">
+      <!-- None -->
+      <div class="filter-chip beauty active" data-filter="none" onclick="applyBeautyFilter('none', this)">
+        <div class="filter-thumb"><span class="thumb-icon">◎</span></div>
+        <div class="filter-name">Original</div>
+      </div>
+      <!-- Smooth Skin -->
+      <div class="filter-chip beauty" data-filter="smooth" onclick="applyBeautyFilter('smooth', this)">
+        <div class="filter-thumb"><span class="thumb-icon">🌸</span></div>
+        <div class="filter-name">Smooth</div>
+      </div>
+      <!-- Brighten -->
+      <div class="filter-chip beauty" data-filter="brighten" onclick="applyBeautyFilter('brighten', this)">
+        <div class="filter-thumb"><span class="thumb-icon">☀️</span></div>
+        <div class="filter-name">Brighten</div>
+      </div>
+      <!-- Glamour Glow -->
+      <div class="filter-chip beauty" data-filter="glow" onclick="applyBeautyFilter('glow', this)">
+        <div class="filter-thumb"><span class="thumb-icon">✨</span></div>
+        <div class="filter-name">Glow</div>
+      </div>
+      <!-- Warm -->
+      <div class="filter-chip beauty" data-filter="warm" onclick="applyBeautyFilter('warm', this)">
+        <div class="filter-thumb"><span class="thumb-icon">🌅</span></div>
+        <div class="filter-name">Warm</div>
+      </div>
+      <!-- Cool -->
+      <div class="filter-chip beauty" data-filter="cool" onclick="applyBeautyFilter('cool', this)">
+        <div class="filter-thumb"><span class="thumb-icon">💎</span></div>
+        <div class="filter-name">Cool</div>
+      </div>
+      <!-- Vintage -->
+      <div class="filter-chip beauty" data-filter="vintage" onclick="applyBeautyFilter('vintage', this)">
+        <div class="filter-thumb"><span class="thumb-icon">🎞️</span></div>
+        <div class="filter-name">Vintage</div>
+      </div>
+    </div>
+ 
+    <!-- Intensity -->
+    <div class="intensity-section">
+      <div class="intensity-header">
+        <span class="intensity-label">Intensity</span>
+        <span class="intensity-value" id="intensityDisplay">75%</span>
+      </div>
+      <div class="slider-track">
+        <div class="slider-fill" id="sliderFill" style="width:75%"></div>
+        <input type="range" id="intensitySlider" min="0" max="100" value="75">
+      </div>
+    </div>
+ 
+    <div class="divider"></div>
+ 
+    <!-- Generative Filters -->
+    <div class="section-label"><span>✦ Generative Styles</span></div>
+ 
+    <div class="gen-grid">
+      <div class="gen-card" data-gen="cartoon" onclick="applyGenFilter('cartoon', this)">
+        <div class="gen-card-bg" style="background: linear-gradient(135deg,#ff6b6b,#ffd93d);"></div>
+        <div class="gen-card-icon">🎨</div>
+        <div class="gen-card-name">Cartoon</div>
+        <span class="gen-badge">AI</span>
+      </div>
+      <div class="gen-card" data-gen="oil" onclick="applyGenFilter('oil', this)">
+        <div class="gen-card-bg" style="background: linear-gradient(135deg,#6b4226,#c9a96e);"></div>
+        <div class="gen-card-icon">🖼️</div>
+        <div class="gen-card-name">Oil Paint</div>
+        <span class="gen-badge">AI</span>
+      </div>
+      <div class="gen-card" data-gen="sketch" onclick="applyGenFilter('sketch', this)">
+        <div class="gen-card-bg" style="background: linear-gradient(135deg,#666,#eee);"></div>
+        <div class="gen-card-icon">✏️</div>
+        <div class="gen-card-name">Sketch</div>
+        <span class="gen-badge">AI</span>
+      </div>
+    </div>
+ 
+    <!-- Download -->
+    <div class="download-section">
+      <button class="download-btn" id="downloadBtn" onclick="downloadPhoto()">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Save Photo
+      </button>
+    </div>
+ 
+  </div>
+ 
+</div>
+ 
+<div class="toast" id="toast"></div>
+ 
+<script>
+// ========== STATE ==========
+let originalImageData = null;
+let currentFilter = 'none';
+let currentGen = null;
+let intensity = 0.75;
+ 
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+ 
+// ========== UPLOAD ==========
+const fileInput = document.getElementById('fileInput');
+const uploadZone = document.getElementById('uploadZone');
+const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+const canvasWrapper = document.getElementById('canvasWrapper');
+const photoActions = document.getElementById('photoActions');
+const filtersSection = document.getElementById('filtersSection');
+ 
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) loadImage(e.target.files[0]);
+});
+ 
+uploadZone.addEventListener('click', e => {
+  if (!originalImageData) fileInput.click();
+});
+ 
+uploadZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  uploadZone.classList.add('drag-over');
+});
+ 
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+ 
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadImage(file);
+});
+ 
+function loadImage(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      // Fit to max 380x380
+      const maxW = 380, maxH = 380;
+      let w = img.width, h = img.height;
+      const ratio = Math.min(maxW / w, maxH / h, 1);
+      canvas.width = Math.round(w * ratio);
+      canvas.height = Math.round(h * ratio);
+ 
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+ 
+      uploadPlaceholder.style.display = 'none';
+      canvasWrapper.style.display = 'flex';
+      photoActions.style.display = 'flex';
+      filtersSection.style.display = 'block';
+ 
+      // Reset filter state
+      currentFilter = 'none';
+      currentGen = null;
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      document.querySelector('[data-filter="none"]').classList.add('active');
+      document.querySelectorAll('.gen-card').forEach(c => c.classList.remove('active'));
+ 
+      showToast('Photo loaded');
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+ 
+// ========== RESET ==========
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (!originalImageData) return;
+  ctx.putImageData(originalImageData, 0, 0);
+  currentFilter = 'none';
+  currentGen = null;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  document.querySelector('[data-filter="none"]').classList.add('active');
+  document.querySelectorAll('.gen-card').forEach(c => c.classList.remove('active'));
+  showToast('Reset to original');
+});
+ 
+// ========== INTENSITY SLIDER ==========
+const slider = document.getElementById('intensitySlider');
+const sliderFill = document.getElementById('sliderFill');
+const intensityDisplay = document.getElementById('intensityDisplay');
+ 
+slider.addEventListener('input', () => {
+  intensity = slider.value / 100;
+  sliderFill.style.width = slider.value + '%';
+  intensityDisplay.textContent = slider.value + '%';
+  if (currentFilter !== 'none') applyBeautyFilter(currentFilter, null, true);
+  else if (currentGen) applyGenFilter(currentGen, null, true);
+});
+ 
+// ========== BEAUTY FILTERS ==========
+function applyBeautyFilter(name, el, silent = false) {
+  if (!originalImageData) return;
+ 
+  if (el) {
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.gen-card').forEach(c => c.classList.remove('active'));
+    currentGen = null;
+  }
+ 
+  currentFilter = name;
+  const t = intensity;
+ 
+  if (!silent) showProcessing('Applying filter…');
+ 
+  setTimeout(() => {
+    // Restore original
+    ctx.putImageData(originalImageData, 0, 0);
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const d = imgData.data;
+ 
+    switch (name) {
+      case 'smooth':   filterSmooth(d, t); break;
+      case 'brighten': filterBrighten(d, t); break;
+      case 'glow':     filterGlow(d, t); break;
+      case 'warm':     filterWarm(d, t); break;
+      case 'cool':     filterCool(d, t); break;
+      case 'vintage':  filterVintage(d, t); break;
+      default: break;
+    }
+ 
+    ctx.putImageData(imgData, 0, 0);
+    hideProcessing();
+    if (!silent) showToast('Filter applied');
+  }, 80);
+}
+ 
+// Filter implementations
+function clamp(v) { return Math.max(0, Math.min(255, v)); }
+ 
+function filterBrighten(d, t) {
+  const factor = 1 + 0.5 * t;
+  for (let i = 0; i < d.length; i += 4) {
+    d[i]   = clamp(d[i]   * factor + 20 * t);
+    d[i+1] = clamp(d[i+1] * factor + 15 * t);
+    d[i+2] = clamp(d[i+2] * factor + 10 * t);
+  }
+}
+ 
+function filterSmooth(d, t) {
+  // Soft blur simulation via mildly reducing harsh contrast
+  const lighten = 18 * t;
+  const satReduce = 0.15 * t;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i], g = d[i+1], b = d[i+2];
+    const lum = 0.299*r + 0.587*g + 0.114*b;
+    d[i]   = clamp(r + (lum - r) * satReduce + lighten);
+    d[i+1] = clamp(g + (lum - g) * satReduce + lighten);
+    d[i+2] = clamp(b + (lum - b) * satReduce + lighten);
+  }
+}
+ 
+function filterGlow(d, t) {
+  // Glamour glow: boost highlights + warm tint + contrast reduce in shadows
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i], g = d[i+1], b = d[i+2];
+    const lum = (r + g + b) / 3;
+    const glowBoost = Math.pow(lum / 255, 0.6) * 255;
+    d[i]   = clamp(r + (glowBoost - r) * 0.4 * t + 10 * t);
+    d[i+1] = clamp(g + (glowBoost - g) * 0.3 * t + 6 * t);
+    d[i+2] = clamp(b + (glowBoost - b) * 0.2 * t);
+  }
+}
+ 
+function filterWarm(d, t) {
+  for (let i = 0; i < d.length; i += 4) {
+    d[i]   = clamp(d[i]   + 30 * t);
+    d[i+1] = clamp(d[i+1] + 10 * t);
+    d[i+2] = clamp(d[i+2] - 20 * t);
+  }
+}
+ 
+function filterCool(d, t) {
+  for (let i = 0; i < d.length; i += 4) {
+    d[i]   = clamp(d[i]   - 15 * t);
+    d[i+1] = clamp(d[i+1] + 5  * t);
+    d[i+2] = clamp(d[i+2] + 30 * t);
+  }
+}
+ 
+function filterVintage(d, t) {
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i], g = d[i+1], b = d[i+2];
+    // Desaturate partially
+    const lum = 0.299*r + 0.587*g + 0.114*b;
+    const dr = r + (lum - r) * 0.4 * t;
+    const dg = g + (lum - g) * 0.4 * t;
+    const db = b + (lum - b) * 0.4 * t;
+    // Sepia tint
+    d[i]   = clamp(dr + 20 * t);
+    d[i+1] = clamp(dg + 5  * t);
+    d[i+2] = clamp(db - 15 * t);
+  }
+}
+ 
+// ========== GENERATIVE FILTERS ==========
+function applyGenFilter(name, el, silent = false) {
+  if (!originalImageData) return;
+ 
+  if (el) {
+    document.querySelectorAll('.gen-card').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    document.querySelector('[data-filter="none"]').classList.add('active');
+    currentFilter = 'none';
+  }
+ 
+  currentGen = name;
+ 
+  const messages = {
+    cartoon: 'Cartoonifying…',
+    oil: 'Painting…',
+    sketch: 'Sketching…'
+  };
+ 
+  if (!silent) showProcessing(messages[name] || 'Applying…');
+ 
+  setTimeout(() => {
+    ctx.putImageData(originalImageData, 0, 0);
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const w = canvas.width, h = canvas.height;
+ 
+    switch (name) {
+      case 'cartoon': genCartoon(imgData.data, w, h, intensity); break;
+      case 'oil':     genOilPainting(imgData.data, w, h, intensity); break;
+      case 'sketch':  genSketch(imgData.data, w, h, intensity); break;
+    }
+ 
+    ctx.putImageData(imgData, 0, 0);
+    hideProcessing();
+    if (!silent) showToast('Style applied ✦');
+  }, 150);
+}
+ 
+function genCartoon(d, w, h, t) {
+  // 1. Quantize colors (cel shading)
+  const levels = Math.round(4 + (1 - t) * 4);
+  const step = 255 / levels;
+  for (let i = 0; i < d.length; i += 4) {
+    d[i]   = Math.round(d[i]   / step) * step;
+    d[i+1] = Math.round(d[i+1] / step) * step;
+    d[i+2] = Math.round(d[i+2] / step) * step;
+  }
+  // 2. Edge darken using simple Sobel-ish
+  const copy = new Uint8ClampedArray(d);
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const idx = (y * w + x) * 4;
+      const lumC  = luma(copy, (y * w + x) * 4);
+      const lumR  = luma(copy, (y * w + x + 1) * 4);
+      const lumB  = luma(copy, ((y+1) * w + x) * 4);
+      const edge = Math.abs(lumC - lumR) + Math.abs(lumC - lumB);
+      if (edge > 30 * (1 - t * 0.5)) {
+        d[idx] = d[idx+1] = d[idx+2] = 0;
+      }
+    }
+  }
+  // Boost saturation
+  for (let i = 0; i < d.length; i += 4) {
+    const l = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+    d[i]   = clamp(l + (d[i]   - l) * (1 + 0.5 * t));
+    d[i+1] = clamp(l + (d[i+1] - l) * (1 + 0.5 * t));
+    d[i+2] = clamp(l + (d[i+2] - l) * (1 + 0.5 * t));
+  }
+}
+ 
+function genOilPainting(d, w, h, t) {
+  const radius = Math.round(2 + t * 3);
+  const bins = 8;
+  const copy = new Uint8ClampedArray(d);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const intensCount = new Array(bins).fill(0);
+      const rSum = new Array(bins).fill(0);
+      const gSum = new Array(bins).fill(0);
+      const bSum = new Array(bins).fill(0);
+      for (let dy = -radius; dy <= radius; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+          const nx = Math.max(0, Math.min(w-1, x + dx));
+          const ny = Math.max(0, Math.min(h-1, y + dy));
+          const ni = (ny * w + nx) * 4;
+          const l = Math.round((copy[ni] + copy[ni+1] + copy[ni+2]) / 3 / 255 * (bins - 1));
+          intensCount[l]++;
+          rSum[l] += copy[ni];
+          gSum[l] += copy[ni+1];
+          bSum[l] += copy[ni+2];
+        }
+      }
+      let maxC = 0, maxIdx = 0;
+      for (let b = 0; b < bins; b++) if (intensCount[b] > maxC) { maxC = intensCount[b]; maxIdx = b; }
+      const idx = (y * w + x) * 4;
+      d[idx]   = rSum[maxIdx] / maxC;
+      d[idx+1] = gSum[maxIdx] / maxC;
+      d[idx+2] = bSum[maxIdx] / maxC;
+    }
+  }
+  // Warm palette nudge
+  for (let i = 0; i < d.length; i += 4) {
+    d[i]   = clamp(d[i]   + 10);
+    d[i+1] = clamp(d[i+1] + 5);
+    d[i+2] = clamp(d[i+2] - 5);
+  }
+}
+ 
+function genSketch(d, w, h, t) {
+  // Convert to grayscale, invert, then blend with dodge
+  const copy = new Uint8ClampedArray(d);
+  // Grayscale
+  for (let i = 0; i < d.length; i += 4) {
+    const l = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+    d[i] = d[i+1] = d[i+2] = l;
+  }
+  // Gaussian blur on inverted copy (simulate pencil lines)
+  const inv = new Uint8ClampedArray(d.length);
+  for (let i = 0; i < d.length; i += 4) {
+    inv[i] = inv[i+1] = inv[i+2] = 255 - d[i];
+    inv[i+3] = 255;
+  }
+  const blurred = gaussBlur(inv, w, h, Math.round(2 + t * 4));
+  // Color dodge blend
+  for (let i = 0; i < d.length; i += 4) {
+    const base = d[i];
+    const blend = blurred[i];
+    const result = blend === 255 ? 255 : clamp((base / (255 - blend)) * 255);
+    const mixed = base + (result - base) * t;
+    d[i] = d[i+1] = d[i+2] = mixed;
+  }
+  // Contrast boost for sketch feel
+  const contrast = 1.3;
+  for (let i = 0; i < d.length; i += 4) {
+    d[i]   = clamp((d[i]   - 128) * contrast + 128);
+    d[i+1] = clamp((d[i+1] - 128) * contrast + 128);
+    d[i+2] = clamp((d[i+2] - 128) * contrast + 128);
+  }
+}
+ 
+function luma(d, i) { return 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]; }
+ 
+function gaussBlur(src, w, h, r) {
+  const out = new Uint8ClampedArray(src.length);
+  const kernel = [];
+  let ksum = 0;
+  for (let i = -r; i <= r; i++) { const v = Math.exp(-i*i/(2*r*r)); kernel.push(v); ksum += v; }
+  for (let i = 0; i < kernel.length; i++) kernel[i] /= ksum;
+  const tmp = new Uint8ClampedArray(src.length);
+  // Horizontal
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let rv = 0;
+      for (let k = -r; k <= r; k++) {
+        const nx = Math.max(0, Math.min(w-1, x+k));
+        rv += src[(y*w+nx)*4] * kernel[k+r];
+      }
+      tmp[(y*w+x)*4] = tmp[(y*w+x)*4+1] = tmp[(y*w+x)*4+2] = rv;
+      tmp[(y*w+x)*4+3] = 255;
+    }
+  }
+  // Vertical
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let rv = 0;
+      for (let k = -r; k <= r; k++) {
+        const ny = Math.max(0, Math.min(h-1, y+k));
+        rv += tmp[(ny*w+x)*4] * kernel[k+r];
+      }
+      out[(y*w+x)*4] = out[(y*w+x)*4+1] = out[(y*w+x)*4+2] = rv;
+      out[(y*w+x)*4+3] = 255;
+    }
+  }
+  return out;
+}
+ 
+// ========== DOWNLOAD ==========
+function downloadPhoto() {
+  if (!originalImageData) return;
+  const link = document.createElement('a');
+  link.download = 'glam-ai-photo.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  showToast('Saved to your device ✦');
+}
+ 
+// ========== UI HELPERS ==========
+function showProcessing(msg) {
+  document.getElementById('processingText').textContent = msg;
+  document.getElementById('processingOverlay').classList.add('active');
+}
+ 
+function hideProcessing() {
+  document.getElementById('processingOverlay').classList.remove('active');
+}
+ 
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+</script>
+</body>
+</html>
+ 
